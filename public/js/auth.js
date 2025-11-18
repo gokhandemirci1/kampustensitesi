@@ -1,5 +1,5 @@
 // Authentication utilities
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'kampustensitesi21.vercel.app';
 
 // Get token from localStorage
 function getToken() {
@@ -97,6 +97,7 @@ async function apiRequest(url, options = {}) {
         throw error;
     }
 }
+
 
 
 
