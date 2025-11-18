@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğrenci Paneli - Kampüsten</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <div class="logo">
+                    <img src="images/logo.svg" alt="Kampüsten Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <h1 style="display: none;">Kampüsten</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#" onclick="logout()">Çıkış Yap</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title">Öğrenci Paneli</h2>
+                <p id="welcomeMessage">Hoş geldiniz!</p>
+                <div class="dashboard-nav">
+                    <a href="#" onclick="showSection('camps')" class="active" id="nav-camps">Kamplar</a>
+                    <a href="#" onclick="showSection('enrollments')" id="nav-enrollments">Kayıtlarım</a>
+                    <a href="#" onclick="showSection('content')" id="nav-content">İçerikler</a>
+                    <a href="#" onclick="showSection('messages')" id="nav-messages">Mesajlar</a>
+                </div>
+            </div>
+
+            <!-- Camps Section -->
+            <div id="section-camps" class="section">
+                <div class="card">
+                    <h3 class="card-title">Mevcut Kamplar</h3>
+                    <div id="campsList" class="card-grid"></div>
+                </div>
+            </div>
+
+            <!-- Enrollments Section -->
+            <div id="section-enrollments" class="section" style="display: none;">
+                <div class="card">
+                    <h3 class="card-title">Kayıt Olduğum Kamplar</h3>
+                    <div id="enrollmentsList"></div>
+                </div>
+            </div>
+
+            <!-- Content Section -->
+            <div id="section-content" class="section" style="display: none;">
+                <div class="card">
+                    <h3 class="card-title">İçerikler</h3>
+                    <div id="contentList"></div>
+                </div>
+            </div>
+
+            <!-- Messages Section -->
+            <div id="section-messages" class="section" style="display: none;">
+                <div class="card">
+                    <h3 class="card-title">Mesajlar</h3>
+                    <div id="messagesList"></div>
+                    <div style="margin-top: 2rem;">
+                        <h4>Yeni Mesaj Gönder</h4>
+                        <form id="messageForm">
+                            <div class="form-group">
+                                <label for="messageClass">Sınıf Seçin (Sınıf mesajı için)</label>
+                                <select id="messageClass" name="class_id">
+                                    <option value="">Sınıf seçin...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="messageText">Mesaj</label>
+                                <textarea id="messageText" name="message" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Gönder</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Teacher Selection Modal -->
+    <div id="teacherModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('teacherModal')">&times;</span>
+            <h3>Öğretmen Seçin</h3>
+            <div id="teachersList"></div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        let currentEnrollmentId = null;
+        let currentCampId = null;
+
+        // Check authentication
+        if (!isAuthenticated() || getUser().role !== 'student') {
+            window.location.href = 'student-login.html';
+        }
+
+        // Load user info
+        async function loadUserInfo() {
+            const user = getUser();
+            document.getElementById('welcomeMessage').textContent = `Hoş geldiniz, ${user.first_name || user.email}!`;
+        }
+
+        // Show section
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.dashboard-nav a').forEach(a => a.classList.remove('active'));
+            document.getElementById(`section-${section}`).style.display = 'block';
+            document.getElementById(`nav-${section}`).classList.add('active');
+            
+            if (section === 'camps') loadCamps();
+            if (section === 'enrollments') loadEnrollments();
+            if (section === 'content') loadContent();
+            if (section === 'messages') {
+                loadMessages();
+                loadClassDropdown();
+            }
+        }
+
+        // Load camps
+        async function loadCamps() {
+            try {
+                const camps = await apiRequest('/camps');
+                const container = document.getElementById('campsList');
+                container.innerHTML = '';
+                
+                camps.forEach(camp => {
+                    const card = document.createElement('div');
+                    card.className = 'camp-card';
+                    card.innerHTML = `
+                        <div class="camp-header">
+                            <h4>${camp.name}</h4>
+                            <span class="camp-price">${camp.price} TL</span>
+                        </div>
+                        <p class="camp-description">${camp.description || 'YKS hazırlık kampı'}</p>
+                        <button class="btn btn-primary btn-large" onclick="enrollInCamp(${camp.id})">🎯 Kampa Kayıt Ol</button>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Enroll in camp
+        async function enrollInCamp(campId) {
+            try {
+                const result = await apiRequest('/enroll', {
+                    method: 'POST',
+                    body: JSON.stringify({ camp_id: campId })
+                });
+                
+                currentEnrollmentId = result.enrollmentId;
+                currentCampId = campId;
+                
+                // Load teachers for this camp
+                await loadTeachersForCamp();
+                document.getElementById('teacherModal').style.display = 'block';
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Load teachers for camp
+        async function loadTeachersForCamp() {
+            try {
+                const teachers = await apiRequest(`/camps/${currentCampId}/teachers`);
+                const container = document.getElementById('teachersList');
+                container.innerHTML = '';
+                
+                if (teachers.length === 0) {
+                    container.innerHTML = '<p>Bu kampa henüz öğretmen atanmamış. Lütfen daha sonra tekrar deneyin.</p>';
+                    return;
+                }
+                
+                teachers.forEach(teacher => {
+                    const div = document.createElement('div');
+                    div.className = 'teacher-card';
+                    const profileImg = teacher.profile_photo 
+                        ? `<img src="${teacher.profile_photo}" alt="${teacher.first_name} ${teacher.last_name}" class="teacher-photo">`
+                        : `<div class="teacher-photo-placeholder">${teacher.first_name.charAt(0)}${teacher.last_name.charAt(0)}</div>`;
+                    div.innerHTML = `
+                        <div class="teacher-header">
+                            ${profileImg}
+                            <div class="teacher-info">
+                                <h4>${teacher.first_name} ${teacher.last_name}</h4>
+                                <p class="teacher-field">📚 ${teacher.field_of_study}</p>
+                                <p class="teacher-university">🎓 ${teacher.university}</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-large" onclick="selectTeacher(${teacher.id})">Bu Öğretmeni Seç</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Select teacher
+        async function selectTeacher(teacherId) {
+            try {
+                const response = await apiRequest('/enroll/choose-teacher', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        enrollment_id: currentEnrollmentId,
+                        teacher_id: teacherId,
+                        class_id: null // Will be set by backend based on teacher's class for this camp
+                    })
+                });
+                
+                closeModal('teacherModal');
+                showAlert('Öğretmen seçildi! Ödeme için aranacaksınız. Lütfen bekleyiniz.', 'success');
+                
+                // Show payment message
+                const paymentMessage = document.createElement('div');
+                paymentMessage.className = 'alert alert-success payment-message';
+                paymentMessage.style.cssText = 'padding: 1.5rem; margin: 2rem 0; border-radius: 10px; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border: 2px solid #28a745;';
+                paymentMessage.innerHTML = `
+                    <h3 style="margin-bottom: 1rem; color: #155724;">💰 Ödeme Bilgilendirmesi</h3>
+                    <p style="font-size: 1.1rem; color: #155724; margin-bottom: 0.5rem;">
+                        <strong>Öğretmeniniz seçildi!</strong> Ödeme işlemi için sizinle iletişime geçilecektir.
+                    </p>
+                    <p style="color: #155724; margin: 0;">
+                        Lütfen telefonunuzu açık tutunuz. Ödeme onaylandıktan sonra sınıfınıza tam erişim sağlayabileceksiniz.
+                    </p>
+                `;
+                
+                const enrollmentsSection = document.getElementById('section-enrollments');
+                if (enrollmentsSection) {
+                    enrollmentsSection.insertBefore(paymentMessage, enrollmentsSection.firstChild);
+                }
+                
+                loadEnrollments();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Load enrollments
+        async function loadEnrollments() {
+            try {
+                const enrollments = await apiRequest('/my-enrollments');
+                const container = document.getElementById('enrollmentsList');
+                container.innerHTML = '';
+                
+                if (enrollments.length === 0) {
+                    container.innerHTML = '<p>Henüz hiçbir kampa kayıt olmadınız.</p>';
+                    return;
+                }
+                
+                enrollments.forEach(enrollment => {
+                    const div = document.createElement('div');
+                    div.className = 'card-item';
+                    div.innerHTML = `
+                        <h4>${enrollment.camp_name}</h4>
+                        <p>Fiyat: ${enrollment.price} TL</p>
+                        ${enrollment.class_name ? `<p>Sınıf: ${enrollment.class_name}</p>` : ''}
+                        ${enrollment.teacher_first_name ? `<p>Öğretmen: ${enrollment.teacher_first_name} ${enrollment.teacher_last_name}</p>` : '<p>Öğretmen seçilmedi</p>'}
+                        ${(enrollment.payment_status === 'paid' || enrollment.payment_status === 'approved') && enrollment.class_id ? `
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="viewClassContent(${enrollment.class_id})">📚 İçerikleri Görüntüle</button>
+                                <button class="btn btn-secondary" onclick="viewClassMessages(${enrollment.class_id})">💬 Sınıf Mesajları</button>
+                                <button class="btn btn-secondary" onclick="viewTeamsLinks(${enrollment.class_id})">🔗 Teams Linkleri</button>
+                            </div>
+                            ${enrollment.payment_status === 'paid' ? `
+                                <div style="margin-top: 1rem; padding: 1rem; background: #d1ecf1; border-radius: 5px; border-left: 4px solid #17a2b8;">
+                                    <p style="margin: 0; color: #0c5460;"><strong>💰 Ödeme Alındı:</strong> Sınıf içeriklerine erişebilirsiniz.</p>
+                                </div>
+                            ` : ''}
+                        ` : enrollment.payment_status === 'pending' ? `
+                            <div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 5px; border-left: 4px solid #ffc107;">
+                                <p style="margin: 0; color: #856404;"><strong>⏳ Ödeme Bekleniyor:</strong> Ödeme için sizinle iletişime geçilecektir. Ödeme alındıktan sonra sınıf içeriklerine erişebileceksiniz.</p>
+                            </div>
+                        ` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // View class content
+        async function viewClassContent(classId) {
+            showSection('content');
+            try {
+                const content = await apiRequest(`/content/${classId}`);
+                const container = document.getElementById('contentList');
+                container.innerHTML = '';
+                
+                if (content.length === 0) {
+                    container.innerHTML = '<p>Bu sınıfta henüz içerik yok.</p>';
+                    return;
+                }
+                
+                content.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'content-item';
+                    div.innerHTML = `
+                        <div class="content-info">
+                            <h4>${item.title}</h4>
+                            <p>${item.description || ''}</p>
+                            ${item.is_free ? '<span class="free-badge">🆓 Ücretsiz</span>' : ''}
+                        </div>
+                        <div class="content-actions">
+                            ${item.file_path && item.downloadable ? `<a href="${item.file_path}" download="${item.file_name}" class="btn btn-primary">📥 İndir</a>` : ''}
+                            ${item.file_path ? `<a href="${item.file_path}" target="_blank" class="btn btn-secondary">👁️ Görüntüle</a>` : ''}
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Load messages
+        async function loadMessages() {
+            try {
+                // Get all messages including class messages
+                const messages = await apiRequest('/messages');
+                const container = document.getElementById('messagesList');
+                container.innerHTML = '';
+                
+                if (messages.length === 0) {
+                    container.innerHTML = '<p>Henüz mesajınız yok.</p>';
+                    return;
+                }
+                
+                // Group messages by class
+                const classMessages = {};
+                const personalMessages = [];
+                
+                messages.forEach(msg => {
+                    if (msg.class_id) {
+                        if (!classMessages[msg.class_id]) {
+                            classMessages[msg.class_id] = [];
+                        }
+                        classMessages[msg.class_id].push(msg);
+                    } else {
+                        personalMessages.push(msg);
+                    }
+                });
+                
+                // Display class messages
+                for (const [classId, msgs] of Object.entries(classMessages)) {
+                    const classInfo = await getClassInfo(classId);
+                    const classDiv = document.createElement('div');
+                    classDiv.className = 'class-messages-section';
+                    classDiv.innerHTML = `<h4 class="class-messages-title">💬 ${classInfo.name} - Sınıf Mesajları</h4>`;
+                    
+                    msgs.forEach(msg => {
+                        const div = document.createElement('div');
+                        div.className = 'message-box class-message';
+                        div.innerHTML = `
+                            <div class="message-header">
+                                <span><strong>${msg.sender_first_name} ${msg.sender_last_name}</strong></span>
+                                <span class="message-time">${new Date(msg.sent_at).toLocaleString('tr-TR')}</span>
+                            </div>
+                            <p>${msg.message}</p>
+                        `;
+                        classDiv.appendChild(div);
+                    });
+                    container.appendChild(classDiv);
+                }
+                
+                // Display personal messages
+                if (personalMessages.length > 0) {
+                    const personalDiv = document.createElement('div');
+                    personalDiv.className = 'personal-messages-section';
+                    personalDiv.innerHTML = '<h4 class="personal-messages-title">📨 Kişisel Mesajlar</h4>';
+                    
+                    personalMessages.forEach(msg => {
+                        const div = document.createElement('div');
+                        div.className = 'message-box personal-message';
+                        div.innerHTML = `
+                            <div class="message-header">
+                                <span><strong>${msg.sender_first_name} ${msg.sender_last_name}</strong> → ${msg.receiver_first_name || 'Sınıf'} ${msg.receiver_last_name || ''}</span>
+                                <span class="message-time">${new Date(msg.sent_at).toLocaleString('tr-TR')}</span>
+                            </div>
+                            <p>${msg.message}</p>
+                        `;
+                        personalDiv.appendChild(div);
+                    });
+                    container.appendChild(personalDiv);
+                }
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+        
+        // Get class info
+        async function getClassInfo(classId) {
+            try {
+                const enrollments = await apiRequest('/my-enrollments');
+                const enrollment = enrollments.find(e => e.class_id == classId);
+                return { name: enrollment?.class_name || 'Sınıf' };
+            } catch (error) {
+                return { name: 'Sınıf' };
+            }
+        }
+
+        // View class messages
+        async function viewClassMessages(classId) {
+            showSection('messages');
+            try {
+                const messages = await apiRequest(`/messages?class_id=${classId}`);
+                const container = document.getElementById('messagesList');
+                container.innerHTML = '';
+                
+                if (messages.length === 0) {
+                    container.innerHTML = '<p>Bu sınıfta henüz mesaj yok.</p>';
+                    return;
+                }
+                
+                messages.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = 'message-box class-message';
+                    div.innerHTML = `
+                        <div class="message-header">
+                            <span><strong>${msg.sender_first_name} ${msg.sender_last_name}</strong></span>
+                            <span class="message-time">${new Date(msg.sent_at).toLocaleString('tr-TR')}</span>
+                        </div>
+                        <p>${msg.message}</p>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // View Teams links
+        async function viewTeamsLinks(classId) {
+            try {
+                const links = await apiRequest(`/teams-links?class_id=${classId}`);
+                const container = document.getElementById('messagesList');
+                container.innerHTML = '';
+                
+                if (links.length === 0) {
+                    container.innerHTML = '<p>Bu sınıf için henüz Teams linki planlanmamış.</p>';
+                    return;
+                }
+                
+                showSection('messages');
+                container.innerHTML = '<h3 style="margin-bottom: 1rem;">🔗 Teams Linkleri</h3>';
+                
+                links.forEach(link => {
+                    const div = document.createElement('div');
+                    div.className = 'message-box';
+                    const scheduledDate = new Date(link.scheduled_time);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((scheduledDate - now) / 60000);
+                    div.innerHTML = `
+                        <div class="message-header">
+                            <span><strong>${link.class_name}</strong></span>
+                            <span class="message-time">${scheduledDate.toLocaleString('tr-TR')}</span>
+                        </div>
+                        <p><strong>Link:</strong> <a href="${link.link}" target="_blank" style="color: #0066cc; text-decoration: underline;">${link.link}</a></p>
+                        <p><strong>Durum:</strong> ${link.sent ? '<span style="color: green;">Gönderildi</span>' : `<span style="color: orange;">Beklemede ${diffMinutes > 0 ? '(' + diffMinutes + ' dakika sonra gönderilecek)' : ''}</span>`}</p>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+        
+        // Load class dropdown for messages
+        async function loadClassDropdown() {
+            try {
+                const enrollments = await apiRequest('/my-enrollments');
+                const select = document.getElementById('messageClass');
+                select.innerHTML = '<option value="">Sınıf seçin...</option>';
+                
+                enrollments.forEach(enrollment => {
+                    if (enrollment.class_id && enrollment.class_name) {
+                        const option = document.createElement('option');
+                        option.value = enrollment.class_id;
+                        option.textContent = `${enrollment.class_name} - ${enrollment.camp_name}`;
+                        select.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+        
+        // Send message
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            if (!data.class_id) {
+                showAlert('Lütfen bir sınıf seçin!', 'error');
+                return;
+            }
+            
+            try {
+                await apiRequest('/messages', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        class_id: data.class_id,
+                        message: data.message
+                    })
+                });
+                showAlert('Mesaj gönderildi!', 'success');
+                e.target.reset();
+                loadMessages();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        });
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Logout
+        function logout() {
+            clearAuth();
+            window.location.href = 'index.html';
+        }
+
+        // Initialize
+        loadUserInfo();
+        loadCamps();
+        loadClassDropdown();
+    </script>
+</body>
+</html>
+

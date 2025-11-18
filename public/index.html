@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kampüsten - YKS Kamp Platformu</title>
+    <link rel="stylesheet" href="css/style.css">
+      <link rel="icon" href="logo.svg" type="image/x-icon">
+    <style>
+        body {
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Space Animation Background */
+        .space-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
+            overflow: hidden;
+        }
+        
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, black, transparent),
+                radial-gradient(2px 2px at 60% 70%, black, transparent),
+                radial-gradient(1px 1px at 50% 50%, black, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent),
+                radial-gradient(2px 2px at 30% 80%, white, transparent),
+                radial-gradient(1px 1px at 90% 40%, white, transparent);
+            background-repeat: repeat;
+            background-size: 200% 200%;
+            animation: twinkle 20s ease-in-out infinite;
+            opacity: 0.8;
+        }
+        
+        .stars::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(1px 1px at 40% 20%, white, transparent),
+                radial-gradient(2px 2px at 70% 50%, white, transparent),
+                radial-gradient(1px 1px at 10% 60%, white, transparent),
+                radial-gradient(2px 2px at 50% 90%, white, transparent),
+                radial-gradient(1px 1px at 25% 15%, white, transparent);
+            background-repeat: repeat;
+            background-size: 300% 300%;
+            animation: twinkle 15s ease-in-out infinite reverse;
+            opacity: 0.6;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.6; transform: translate(0, 0); }
+            50% { opacity: 1; transform: translate(-20px, -20px); }
+        }
+        
+        /* Floating Planets */
+        .planet {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(1px);
+            opacity: 0.3;
+            animation: float 30s ease-in-out infinite;
+        }
+        
+        .planet-1 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at 30% 30%, #4a90e2, #2e5c8a);
+            top: 10%;
+            left: 5%;
+            animation-duration: 40s;
+        }
+        
+        .planet-2 {
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle at 30% 30%, #e24a90, #8a2e5c);
+            top: 60%;
+            right: 10%;
+            animation-duration: 35s;
+        }
+        
+        .planet-3 {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle at 30% 30%, #90e24a, #5c8a2e);
+            bottom: 20%;
+            left: 20%;
+            animation-duration: 45s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        
+        /* Nebula Effect */
+        .nebula {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.2), transparent);
+            filter: blur(60px);
+            animation: nebulaMove 50s ease-in-out infinite;
+            top: 30%;
+            right: 20%;
+        }
+        
+        .nebula-2 {
+            background: radial-gradient(circle, rgba(255, 20, 147, 0.15), transparent);
+            animation-duration: 60s;
+            top: 50%;
+            left: 15%;
+        }
+        
+        @keyframes nebulaMove {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(100px, -100px) scale(1.2); }
+        }
+        
+        /* Mouse Trail Particles */
+        .trail-particle {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            animation: fadeTrail 0.8s ease-out forwards;
+        }
+        
+        @keyframes fadeTrail {
+            0% {
+                opacity: 1;
+                transform: scale(1) translate(0, 0);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3) translate(var(--tx, 0), var(--ty, 0));
+            }
+        }
+        
+        /* Ensure content is above background */
+        header, main, footer {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Hero section adjustments for space background */
+        .hero {
+            background: transparent !important;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .hero-title {
+            color: white !important;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        }
+        
+        .hero-subtitle {
+            color: rgba(255, 255, 255, 0.9) !important;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Features section with semi-transparent background */
+        .features {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* CTA section */
+        .cta {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .cta-content {
+            color: white;
+        }
+        
+        .cta-content h2 {
+            color: white !important;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .cta-content p {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+        
+        /* Footer */
+        footer {
+            background: rgba(0, 0, 0, 0.3) !important;
+            color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Navbar with transparency */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <div class="space-background">
+        <div class="stars"></div>
+        <div class="planet planet-1"></div>
+        <div class="planet planet-2"></div>
+        <div class="planet planet-3"></div>
+        <div class="nebula"></div>
+        <div class="nebula nebula-2"></div>
+    </div>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <div class="logo">
+                    <img src="./images/logo.svg" alt="Kampüsten Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <h1 style="display: none;">Kampüsten</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="active">Ana Sayfa</a></li>
+                    <li><a href="student-login.html">Öğrenci Girişi</a></li>
+                    <li><a href="teacher-login.html">Öğretmen Girişi</a></li>
+                    
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1 class="hero-title">ENDİŞE ETME BİZ VARIZ!</h1>
+                    <p class="hero-subtitle">Sınava hazırlanırken zorlandığın konuda takviye ders alırken 1 saat yerine 15 saat al. En iyi seni ortaya çıkar. Kuracağın NETWORK ile geleceğini de şimdiden inşa et.</p>
+                    <div class="hero-buttons">
+                        <a href="student-register.html" class="btn btn-primary btn-large">Ücretsiz Kayıt Ol</a>
+                        <a href="student-login.html" class="btn btn-secondary btn-large">Giriş Yap</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2 class="section-title">Neden Kampüsten?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Ücretsiz Kayıt</h3>
+                        <p>Hemen kayıt olun ve ücretsiz içeriklere erişin. Hiçbir kredi kartı bilgisi gerekmez!</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📚</div>
+                        <h3>Ücretsiz İçerikler</h3>
+                        <p>Eğitmenlerimizin paylaştığı ücretsiz ders materyallerine hemen erişebilirsiniz.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👨‍🏫</div>
+                        <h3>Deneyimli Eğitmenler</h3>
+                        <p>Alanında uzman, kampüsteki eğitmeninle  çalışırsın.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💬</div>
+                        <h3>Canlı İletişim</h3>
+                        <p>Öğretmenlerinizle doğrudan iletişim kurun, sorularınızı sorun.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📥</div>
+                        <h3>İndirilebilir İçerikler</h3>
+                        <p>Ders materyallerini indirip istediğiniz zaman çalışabilirsiniz.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Hedef Odaklı</h3>
+                        <p>Size özel hazırlanmış kamp programları ile hedefinize odaklanın.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta">
+            <div class="container">
+                <div class="cta-content">
+                    <h2>Hemen Başlayın!</h2>
+                    <p>Binlerce öğrenci Kampüsten ile başarıya ulaştı. Siz de aramıza katılın!</p>
+                    <a href="student-register.html" class="btn btn-primary btn-large">Ücretsiz Kayıt Ol</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Kampüsten. Tüm hakları saklıdır.</p>
+            <li><a href="admin-login.html">Admin Girişi</a></li>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // Mouse Trail Effect
+        const colors = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b',
+            '#eb4d4b', '#6c5ce7', '#a29bfe', '#fd79a8', '#fdcb6e',
+            '#00b894', '#00cec9', '#0984e3', '#6c5ce7', '#a29bfe'
+        ];
+        
+        let mouseX = 0;
+        let mouseY = 0;
+        let trailCount = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Create trail particles
+            if (trailCount % 2 === 0) { // Create particle every 2 mouse moves for performance
+                createTrailParticle(mouseX, mouseY);
+            }
+            trailCount++;
+        });
+        
+        function createTrailParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.className = 'trail-particle';
+            
+            // Random color from palette
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.background = color;
+            particle.style.boxShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
+            
+            // Random position offset
+            const offsetX = (Math.random() - 0.5) * 20;
+            const offsetY = (Math.random() - 0.5) * 20;
+            
+            particle.style.left = (x + offsetX) + 'px';
+            particle.style.top = (y + offsetY) + 'px';
+            
+            // Random animation direction
+            const tx = (Math.random() - 0.5) * 100;
+            const ty = (Math.random() - 0.5) * 100;
+            particle.style.setProperty('--tx', tx + 'px');
+            particle.style.setProperty('--ty', ty + 'px');
+            
+            // Random size
+            const size = Math.random() * 6 + 4;
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            
+            document.body.appendChild(particle);
+            
+            // Remove particle after animation
+            setTimeout(() => {
+                particle.remove();
+            }, 800);
+        }
+        
+        // Add extra particles on click for more effect
+        document.addEventListener('click', (e) => {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createTrailParticle(e.clientX, e.clientY);
+                }, i * 50);
+            }
+        });
+    </script>
+</body>
+</html>
+

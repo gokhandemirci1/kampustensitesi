@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Paneli - Kampüsten</title>
+    <link rel="stylesheet" href="css/style.css">
+      <link rel="icon" href="logo1.svg" type="image/x-icon">
+    <style>
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #fff 0%, #f9f9f9 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+            text-align: center;
+        }
+        .stat-card h4 {
+            margin: 0 0 0.5rem 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .stat-card .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin: 0;
+        }
+        .teacher-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .teacher-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+        .teacher-card.pending {
+            border-left: 5px solid #ffc107;
+        }
+        .teacher-card.approved {
+            border-left: 5px solid #28a745;
+        }
+        .teacher-header {
+            display: flex;
+            gap: 1.5rem;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        .teacher-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary-color);
+            box-shadow: 0 4px 10px rgba(255, 222, 89, 0.3);
+        }
+        .teacher-photo-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #ffed80 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-color);
+            border: 3px solid var(--primary-color);
+        }
+        .teacher-info {
+            flex: 1;
+        }
+        .teacher-info h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-color);
+        }
+        .teacher-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin: 1rem 0;
+            color: #666;
+        }
+        .content-preview {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+        .content-preview h4 {
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+        .content-item-small {
+            padding: 0.5rem;
+            background: white;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+            border-left: 3px solid var(--primary-color);
+        }
+        .student-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #17a2b8;
+        }
+        .student-card.pending {
+            border-left-color: #ffc107;
+        }
+        .student-card.approved {
+            border-left-color: #28a745;
+        }
+        .payment-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .camp-class-select {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f0f8ff;
+            border-radius: 10px;
+            border: 2px dashed #4a90e2;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <div class="logo">
+                    <img src="images/logo.svg" alt="Kampüsten Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <h1 style="display: none;">Kampüsten</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#" onclick="logout()">Çıkış Yap</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title">Admin Paneli</h2>
+                <p id="welcomeMessage">Hoş geldiniz!</p>
+                <div class="dashboard-nav">
+                    <a href="#" onclick="showSection('stats')" class="active" id="nav-stats">📊 İstatistikler</a>
+                    <a href="#" onclick="showSection('teachers')" id="nav-teachers">👨‍🏫 Öğretmen Onayları</a>
+                    <a href="#" onclick="showSection('pending-payments')" id="nav-pending-payments">💰 Bekleyen Ödemeler</a>
+                    <a href="#" onclick="showSection('students')" id="nav-students">👥 Öğrenci Yönetimi</a>
+                    <a href="#" onclick="showSection('camps')" id="nav-camps">🎯 Kamp Yönetimi</a>
+                </div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div id="section-stats" class="section">
+                <div class="card">
+                    <h3 class="card-title">Genel İstatistikler</h3>
+                    <div class="admin-stats-grid">
+                        <div class="stat-card">
+                            <h4>Toplam Öğrenci</h4>
+                            <p class="stat-value" id="stat-students">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Toplam Öğretmen</h4>
+                            <p class="stat-value" id="stat-teachers">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Onay Bekleyen Öğretmen</h4>
+                            <p class="stat-value" id="stat-pending-teachers">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Onaylı Öğretmen</h4>
+                            <p class="stat-value" id="stat-approved-teachers">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Toplam Kamp</h4>
+                            <p class="stat-value" id="stat-camps">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Toplam Sınıf</h4>
+                            <p class="stat-value" id="stat-classes">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Bekleyen Ödemeler</h4>
+                            <p class="stat-value" id="stat-pending-payments">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Ödemesi Alınmış</h4>
+                            <p class="stat-value" id="stat-paid-payments">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Onaylanmış Ödemeler</h4>
+                            <p class="stat-value" id="stat-approved-payments">-</p>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Reddedilen Ödemeler</h4>
+                            <p class="stat-value" id="stat-rejected-payments">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 2rem;">
+                    <h3 class="card-title">Kamp İstatistikleri</h3>
+                    <div id="campStatsList"></div>
+                </div>
+
+                <div class="card" style="margin-top: 2rem;">
+                    <h3 class="card-title">Sınıf İstatistikleri</h3>
+                    <div id="classStatsList"></div>
+                </div>
+            </div>
+
+            <!-- Teacher Approval Section -->
+            <div id="section-teachers" class="section" style="display: none;">
+                <div class="card">
+                    <h3 class="card-title">Öğretmen Onayları</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <button class="btn btn-secondary" onclick="filterTeachers('all')">Tümü</button>
+                        <button class="btn btn-secondary" onclick="filterTeachers('pending')">Bekleyenler</button>
+                        <button class="btn btn-secondary" onclick="filterTeachers('approved')">Onaylananlar</button>
+                    </div>
+                    <div id="teachersList"></div>
+                </div>
+            </div>
+
+            <!-- Pending Payments Section -->
+            <div id="section-pending-payments" class="section" style="display: none;">
+                <div class="card">
+                    <h3 class="card-title">Bekleyen Ödemeler</h3>
+                    <p style="color: #666; margin-bottom: 1.5rem;">Ödeme onayı bekleyen öğrenciler. Ödeme onaylandıktan sonra öğrenciyi sınıfa atayabilirsiniz.</p>
+                    <div id="pendingPaymentsList"></div>
+                </div>
+            </div>
+
+            <!-- Students Management Section -->
+            <div id="section-students" class="section" style="display: none;">
+                <div class="card">
+                    <h3 class="card-title">Öğrenci Yönetimi</h3>
+                    
+                    <!-- Tabs -->
+                    <div class="tabs" style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid #e0e0e0;">
+                        <button class="tab-btn active" onclick="showStudentTab('pending')" id="tab-pending">
+                            ⏳ Bekleyen Onaylar (<span id="pending-count">0</span>)
+                        </button>
+                        <button class="tab-btn" onclick="showStudentTab('approved')" id="tab-approved">
+                            ✅ Onaylanmış (<span id="approved-count">0</span>)
+                        </button>
+                        <button class="tab-btn" onclick="showStudentTab('rejected')" id="tab-rejected">
+                            ❌ Reddedilmiş (<span id="rejected-count">0</span>)
+                        </button>
+                    </div>
+                    
+                    <!-- Pending Approvals Tab -->
+                    <div id="student-tab-pending" class="student-tab-content">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ad Soyad</th>
+                                        <th>E-posta</th>
+                                        <th>Telefon</th>
+                                        <th>Kamp</th>
+                                        <th>Fiyat</th>
+                                        <th>Kayıt Tarihi</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendingStudentsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Approved Tab -->
+                    <div id="student-tab-approved" class="student-tab-content" style="display: none;">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ad Soyad</th>
+                                        <th>E-posta</th>
+                                        <th>Telefon</th>
+                                        <th>Kamp</th>
+                                        <th>Sınıf</th>
+                                        <th>Öğretmen</th>
+                                        <th>Ödeme Durumu</th>
+                                        <th>Kayıt Tarihi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="approvedStudentsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Rejected Tab -->
+                    <div id="student-tab-rejected" class="student-tab-content" style="display: none;">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ad Soyad</th>
+                                        <th>E-posta</th>
+                                        <th>Telefon</th>
+                                        <th>Kamp</th>
+                                        <th>Fiyat</th>
+                                        <th>Reddetme Nedeni</th>
+                                        <th>Kayıt Tarihi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rejectedStudentsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camps Management Section -->
+            <div id="section-camps" class="section" style="display: none;">
+                <div class="card">
+                    <h3 class="card-title">Yeni Kamp Oluştur</h3>
+                    <form id="createCampForm">
+                        <div class="form-group">
+                            <label for="campName">Kamp Adı</label>
+                            <input type="text" id="campName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="campDescription">Açıklama</label>
+                            <textarea id="campDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="campPrice">Fiyat (TL)</label>
+                            <input type="number" id="campPrice" name="price" step="0.01" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Kamp Oluştur</button>
+                    </form>
+                </div>
+                <div class="card" style="margin-top: 2rem;">
+                    <h3 class="card-title">Mevcut Kamplar</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Ad</th>
+                                    <th>Açıklama</th>
+                                    <th>Fiyat</th>
+                                    <th>Öğretmenler</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Teacher Detail Modal -->
+    <div id="teacherModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('teacherModal')">&times;</span>
+            <h3>Öğretmen Detayları</h3>
+            <div id="teacherModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Reject Teacher Modal -->
+    <div id="rejectTeacherModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('rejectTeacherModal')">&times;</span>
+            <h3>Öğretmeni Reddet</h3>
+            <form id="rejectTeacherForm">
+                <input type="hidden" id="rejectTeacherId" name="teacher_id">
+                <div class="form-group">
+                    <label for="rejectReason">Reddetme Nedeni</label>
+                    <textarea id="rejectReason" name="reason" rows="4" required placeholder="Öğretmeni neden reddettiğinizi açıklayın..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Reddet</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('rejectTeacherModal')">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payment Approval Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('paymentModal')">&times;</span>
+            <h3>Ödeme Onayı</h3>
+            <div id="paymentModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Payment Reject Modal -->
+    <div id="rejectPaymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('rejectPaymentModal')">&times;</span>
+            <h3>Ödemeyi Reddet</h3>
+            <form id="rejectPaymentForm">
+                <input type="hidden" id="rejectPaymentId" name="enrollment_id">
+                <div class="form-group">
+                    <label for="rejectPaymentReason">Reddetme Nedeni</label>
+                    <textarea id="rejectPaymentReason" name="reason" rows="4" required placeholder="Ödeme neden reddedildi?"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Reddet</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('rejectPaymentModal')">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reject Student Enrollment Modal -->
+    <div id="rejectStudentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('rejectStudentModal')">&times;</span>
+            <h3>Öğrenci Kaydını Reddet</h3>
+            <form id="rejectStudentForm">
+                <input type="hidden" id="rejectStudentEnrollmentId" name="enrollment_id">
+                <div class="form-group">
+                    <label for="rejectStudentReason">Reddetme Nedeni</label>
+                    <select id="rejectStudentReason" name="rejection_reason" required style="width: 100%; padding: 0.8rem; margin-top: 0.5rem; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="">Seçiniz...</option>
+                        <option value="could_not_contact">İletişim kurulamadı</option>
+                        <option value="price_too_high">Fiyat çok yüksek</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Reddet</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('rejectStudentModal')">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Teacher Modal -->
+    <div id="assignTeacherModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('assignTeacherModal')">&times;</span>
+            <h3>Kampa Öğretmen Ata</h3>
+            <div id="assignTeacherModalContent"></div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // Check authentication
+        if (!isAuthenticated() || getUser().role !== 'admin') {
+            window.location.href = 'admin-login.html';
+        }
+
+        let allTeachers = [];
+        let allStudents = [];
+        let allEnrollments = [];
+        let allCamps = [];
+        let allClasses = [];
+        let currentTeacherFilter = 'all';
+        let currentStudentFilter = 'all';
+
+        // Load user info
+        function loadUserInfo() {
+            const user = getUser();
+            document.getElementById('welcomeMessage').textContent = `Hoş geldiniz, ${user.email}!`;
+        }
+
+        // Show section
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.dashboard-nav a').forEach(a => a.classList.remove('active'));
+            document.getElementById(`section-${section}`).style.display = 'block';
+            document.getElementById(`nav-${section}`).classList.add('active');
+            
+            if (section === 'stats') loadStats();
+            if (section === 'teachers') loadTeachers();
+            if (section === 'pending-payments') loadPendingPayments();
+            if (section === 'students') loadStudents();
+            if (section === 'camps') loadCamps();
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const stats = await apiRequest('/admin/stats');
+                
+                document.getElementById('stat-students').textContent = stats.students;
+                document.getElementById('stat-teachers').textContent = stats.teachers;
+                document.getElementById('stat-pending-teachers').textContent = stats.pending_teachers;
+                document.getElementById('stat-approved-teachers').textContent = stats.approved_teachers;
+                document.getElementById('stat-camps').textContent = stats.camps;
+                document.getElementById('stat-classes').textContent = stats.classes;
+                document.getElementById('stat-pending-payments').textContent = stats.pending_payments;
+                document.getElementById('stat-paid-payments').textContent = stats.paid_payments;
+                document.getElementById('stat-approved-payments').textContent = stats.approved_payments;
+                document.getElementById('stat-rejected-payments').textContent = stats.rejected_payments || 0;
+                
+                // Camp stats
+                const campContainer = document.getElementById('campStatsList');
+                campContainer.innerHTML = '';
+                if (stats.camp_stats && stats.camp_stats.length > 0) {
+                    stats.camp_stats.forEach(camp => {
+                        const div = document.createElement('div');
+                        div.className = 'card-item';
+                        div.innerHTML = `
+                            <h4>${camp.name}</h4>
+                            <div class="teacher-details">
+                                <span>Toplam Kayıt: <strong>${camp.total_enrollments}</strong></span>
+                                <span>Sınıf Sayısı: <strong>${camp.total_classes}</strong></span>
+                                <span>Bekleyen: <strong style="color: #ffc107;">${camp.pending}</strong></span>
+                                <span>Ödemesi Alınmış: <strong style="color: #17a2b8;">${camp.paid}</strong></span>
+                                <span>Onaylanmış: <strong style="color: #28a745;">${camp.approved}</strong></span>
+                            </div>
+                        `;
+                        campContainer.appendChild(div);
+                    });
+                } else {
+                    campContainer.innerHTML = '<p>Henüz kamp istatistiği yok.</p>';
+                }
+                
+                // Class stats
+                const classContainer = document.getElementById('classStatsList');
+                classContainer.innerHTML = '';
+                if (stats.class_stats && stats.class_stats.length > 0) {
+                    stats.class_stats.forEach(cls => {
+                        const div = document.createElement('div');
+                        div.className = 'card-item';
+                        div.innerHTML = `
+                            <h4>${cls.name}</h4>
+                            <div class="teacher-details">
+                                <span>Toplam Öğrenci: <strong>${cls.total_students}</strong></span>
+                                <span>Onaylanmış: <strong style="color: #28a745;">${cls.approved_students}</strong></span>
+                            </div>
+                        `;
+                        classContainer.appendChild(div);
+                    });
+                } else {
+                    classContainer.innerHTML = '<p>Henüz sınıf istatistiği yok.</p>';
+                }
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Load teachers
+        async function loadTeachers() {
+            try {
+                allTeachers = await apiRequest('/teachers');
+                filterTeachers(currentTeacherFilter);
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Filter teachers
+        function filterTeachers(filter) {
+            currentTeacherFilter = filter;
+            const filtered = filter === 'all' 
+                ? allTeachers 
+                : filter === 'pending'
+                ? allTeachers.filter(t => !t.approved)
+                : allTeachers.filter(t => t.approved);
+            
+            displayTeachers(filtered);
+        }
+
+        // Display teachers
+        async function displayTeachers(teachers) {
+            const container = document.getElementById('teachersList');
+            container.innerHTML = '';
+            
+            if (teachers.length === 0) {
+                container.innerHTML = '<p>Öğretmen bulunamadı.</p>';
+                return;
+            }
+            
+            for (const teacher of teachers) {
+                const card = document.createElement('div');
+                card.className = `teacher-card ${teacher.approved ? 'approved' : 'pending'}`;
+                
+                // Load teacher content
+                let contentHtml = '';
+                if (teacher.approved) {
+                    try {
+                        const content = await apiRequest(`/admin/teachers/${teacher.id}/content`);
+                        if (content.length > 0) {
+                            contentHtml = '<div class="content-preview"><h4>Yüklenen İçerikler:</h4>';
+                            content.slice(0, 3).forEach(item => {
+                                contentHtml += `<div class="content-item-small"><strong>${item.title}</strong> - ${item.class_name || 'Sınıf'}</div>`;
+                            });
+                            if (content.length > 3) {
+                                contentHtml += `<p style="margin-top: 0.5rem; color: #666;">+ ${content.length - 3} içerik daha...</p>`;
+                            }
+                            contentHtml += '</div>';
+                        }
+                    } catch (error) {
+                        console.error('Error loading teacher content:', error);
+                    }
+                }
+                
+                const profileImg = teacher.profile_photo 
+                    ? `<img src="${teacher.profile_photo}" alt="${teacher.first_name} ${teacher.last_name}" class="teacher-photo">`
+                    : `<div class="teacher-photo-placeholder">${teacher.first_name?.charAt(0) || ''}${teacher.last_name?.charAt(0) || ''}</div>`;
+                
+                card.innerHTML = `
+                    <div class="teacher-header">
+                        ${profileImg}
+                        <div class="teacher-info">
+                            <h3>${teacher.first_name} ${teacher.last_name}</h3>
+                            <div class="teacher-details">
+                                <span>📧 ${teacher.email}</span>
+                                <span>📞 ${teacher.phone || 'Belirtilmemiş'}</span>
+                                <span>📚 ${teacher.field_of_study || 'Belirtilmemiş'}</span>
+                                <span>🎓 ${teacher.university || 'Belirtilmemiş'}</span>
+                                <span>📅 ${new Date(teacher.created_at).toLocaleDateString('tr-TR')}</span>
+                            </div>
+                            ${contentHtml}
+                        </div>
+                    </div>
+                    <div class="payment-actions">
+                        ${!teacher.approved ? `
+                            <button class="btn btn-success" onclick="approveTeacher(${teacher.id})">✅ Onayla</button>
+                            <button class="btn btn-danger" onclick="showRejectTeacherModal(${teacher.id})">❌ Reddet</button>
+                        ` : `
+                            <span style="color: #28a745; font-weight: bold;">✓ Onaylanmış</span>
+                        `}
+                        <button class="btn btn-secondary" onclick="viewTeacherDetails(${teacher.id})">👁️ Detaylar</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        // Approve teacher
+        async function approveTeacher(id) {
+            if (!confirm('Bu öğretmeni onaylamak istediğinize emin misiniz?')) return;
+            
+            try {
+                await apiRequest(`/teachers/approve/${id}`, { method: 'POST' });
+                showAlert('Öğretmen onaylandı!', 'success');
+                loadTeachers();
+                loadStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Show reject teacher modal
+        function showRejectTeacherModal(id) {
+            document.getElementById('rejectTeacherId').value = id;
+            document.getElementById('rejectTeacherModal').style.display = 'block';
+        }
+
+        // Reject teacher
+        document.getElementById('rejectTeacherForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            if (!confirm('Bu öğretmeni reddetmek istediğinize emin misiniz? Hesap silinecek.')) return;
+            
+            try {
+                await apiRequest(`/teachers/reject/${data.teacher_id}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: data.reason })
+                });
+                showAlert('Öğretmen reddedildi ve silindi!', 'success');
+                closeModal('rejectTeacherModal');
+                e.target.reset();
+                loadTeachers();
+                loadStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        });
+
+        // View teacher details
+        async function viewTeacherDetails(id) {
+            const teacher = allTeachers.find(t => t.id === id);
+            if (!teacher) return;
+            
+            let contentHtml = '';
+            try {
+                const content = await apiRequest(`/admin/teachers/${id}/content`);
+                if (content.length > 0) {
+                    contentHtml = '<h4>Yüklenen İçerikler:</h4><div style="max-height: 300px; overflow-y: auto;">';
+                    content.forEach(item => {
+                        contentHtml += `
+                            <div class="content-item-small">
+                                <strong>${item.title}</strong><br>
+                                <small>Sınıf: ${item.class_name || 'Bilinmiyor'}</small><br>
+                                <small>${item.description || ''}</small>
+                                ${item.file_path ? `<br><a href="${item.file_path}" target="_blank" style="color: #0066cc;">Dosyayı Görüntüle</a>` : ''}
+                            </div>
+                        `;
+                    });
+                    contentHtml += '</div>';
+                } else {
+                    contentHtml = '<p>Henüz içerik yüklenmemiş.</p>';
+                }
+            } catch (error) {
+                contentHtml = '<p>İçerikler yüklenirken hata oluştu.</p>';
+            }
+            
+            const profileImg = teacher.profile_photo 
+                ? `<img src="${teacher.profile_photo}" alt="${teacher.first_name} ${teacher.last_name}" class="teacher-photo" style="width: 150px; height: 150px;">`
+                : `<div class="teacher-photo-placeholder" style="width: 150px; height: 150px; font-size: 3rem;">${teacher.first_name?.charAt(0) || ''}${teacher.last_name?.charAt(0) || ''}</div>`;
+            
+            document.getElementById('teacherModalContent').innerHTML = `
+                <div class="teacher-header">
+                    ${profileImg}
+                    <div class="teacher-info">
+                        <h3>${teacher.first_name} ${teacher.last_name}</h3>
+                        <div class="teacher-details">
+                            <span><strong>E-posta:</strong> ${teacher.email}</span>
+                            <span><strong>Telefon:</strong> ${teacher.phone || 'Belirtilmemiş'}</span>
+                            <span><strong>Alan:</strong> ${teacher.field_of_study || 'Belirtilmemiş'}</span>
+                            <span><strong>Üniversite:</strong> ${teacher.university || 'Belirtilmemiş'}</span>
+                            <span><strong>Kayıt Tarihi:</strong> ${new Date(teacher.created_at).toLocaleString('tr-TR')}</span>
+                            <span><strong>Durum:</strong> ${teacher.approved ? '<span style="color: #28a745;">Onaylı</span>' : '<span style="color: #ffc107;">Beklemede</span>'}</span>
+                        </div>
+                        ${contentHtml}
+                    </div>
+                </div>
+            `;
+            document.getElementById('teacherModal').style.display = 'block';
+        }
+
+        // Load pending payments
+        async function loadPendingPayments() {
+            try {
+                allEnrollments = await apiRequest('/admin/enrollments');
+                allCamps = await apiRequest('/camps');
+                allClasses = await apiRequest('/admin/classes');
+                
+                const pending = allEnrollments.filter(e => e.payment_status === 'pending' || e.payment_status === 'paid');
+                displayPendingPayments(pending);
+            } catch (error) {
+                showAlert(error.message, 'error');
+                console.error('Load pending payments error:', error);
+            }
+        }
+
+        // Display pending payments
+        function displayPendingPayments(enrollments) {
+            const container = document.getElementById('pendingPaymentsList');
+            container.innerHTML = '';
+            
+            if (enrollments.length === 0) {
+                container.innerHTML = '<p>Bekleyen ödeme bulunamadı.</p>';
+                return;
+            }
+            
+            enrollments.forEach(enrollment => {
+                const card = document.createElement('div');
+                card.className = `student-card ${enrollment.payment_status}`;
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
+                        <div style="flex: 1;">
+                            <h4>${enrollment.student_name}</h4>
+                            <div class="teacher-details">
+                                <span>📧 ${enrollment.student_email}</span>
+                                <span>📞 ${enrollment.student_phone || 'Belirtilmemiş'}</span>
+                                <span>🎯 Kamp: ${enrollment.camp_name}</span>
+                                <span>💰 Fiyat: ${enrollment.camp_price} TL</span>
+                                ${enrollment.teacher_name ? `<span>👨‍🏫 Öğretmen: ${enrollment.teacher_name}</span>` : ''}
+                                ${enrollment.class_name ? `<span>📚 Sınıf: ${enrollment.class_name}</span>` : ''}
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                ${getPaymentStatusBadge(enrollment.payment_status)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="payment-actions">
+                        ${enrollment.payment_status === 'pending' ? `
+                            <button class="btn btn-success" onclick="showPaymentApprovalModal(${enrollment.id})">💰 Ödeme Alındı</button>
+                            <button class="btn btn-danger" onclick="showRejectPaymentModal(${enrollment.id})">❌ Ödemeyi Reddet</button>
+                        ` : enrollment.payment_status === 'paid' ? `
+                            <button class="btn btn-primary" onclick="showPaymentApprovalModal(${enrollment.id})">✅ Onayla ve Sınıfa Ata</button>
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Show payment approval modal
+        async function showPaymentApprovalModal(enrollmentId) {
+            const enrollment = allEnrollments.find(e => e.id === enrollmentId);
+            if (!enrollment) return;
+            
+            // Get available classes for this camp
+            const campClasses = allClasses.filter(c => c.camp_id === enrollment.camp_id);
+            let classSelectHtml = '';
+            
+            if (enrollment.payment_status === 'paid' && campClasses.length > 0) {
+                classSelectHtml = `
+                    <div class="camp-class-select">
+                        <label><strong>Sınıf Seçin (Ödeme onaylandıktan sonra öğrenci bu sınıfa atanacak):</strong></label>
+                        <select id="approvalClassId" class="form-group" style="width: 100%; padding: 0.8rem; margin-top: 0.5rem;">
+                            <option value="">Sınıf seçin...</option>
+                            ${campClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('paymentModalContent').innerHTML = `
+                <div class="student-card">
+                    <h4>${enrollment.student_name}</h4>
+                    <p><strong>Kamp:</strong> ${enrollment.camp_name}</p>
+                    <p><strong>Fiyat:</strong> ${enrollment.camp_price} TL</p>
+                    ${enrollment.teacher_name ? `<p><strong>Öğretmen:</strong> ${enrollment.teacher_name}</p>` : ''}
+                    ${classSelectHtml}
+                    <div class="payment-actions" style="margin-top: 1.5rem;">
+                        <button class="btn btn-success" onclick="approvePayment(${enrollmentId})">${enrollment.payment_status === 'pending' ? 'Ödeme Alındı Olarak İşaretle' : 'Onayla ve Sınıfa Ata'}</button>
+                        <button class="btn btn-secondary" onclick="closeModal('paymentModal')">İptal</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('paymentModal').style.display = 'block';
+        }
+
+        // Approve payment
+        async function approvePayment(enrollmentId) {
+            const enrollment = allEnrollments.find(e => e.id === enrollmentId);
+            if (!enrollment) return;
+            
+            const classSelect = document.getElementById('approvalClassId');
+            const classId = classSelect ? classSelect.value : null;
+            
+            if (enrollment.payment_status === 'paid' && !classId) {
+                showAlert('Lütfen bir sınıf seçin!', 'error');
+                return;
+            }
+            
+            const confirmMsg = enrollment.payment_status === 'pending' 
+                ? 'Ödeme alındı olarak işaretlemek istediğinize emin misiniz?'
+                : 'Öğrenciyi onaylayıp sınıfa atamak istediğinize emin misiniz?';
+            
+            if (!confirm(confirmMsg)) return;
+            
+            try {
+                const status = enrollment.payment_status === 'pending' ? 'paid' : 'approved';
+                await apiRequest(`/admin/enrollments/${enrollmentId}/payment`, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        payment_status: status,
+                        class_id: classId || enrollment.class_id
+                    })
+                });
+                
+                showAlert(enrollment.payment_status === 'pending' ? 'Ödeme alındı olarak işaretlendi!' : 'Öğrenci onaylandı ve sınıfa atandı!', 'success');
+                closeModal('paymentModal');
+                loadPendingPayments();
+                loadStudents();
+                loadStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Show reject payment modal
+        function showRejectPaymentModal(enrollmentId) {
+            document.getElementById('rejectPaymentId').value = enrollmentId;
+            document.getElementById('rejectPaymentModal').style.display = 'block';
+        }
+
+        // Reject payment
+        document.getElementById('rejectPaymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            if (!confirm('Ödemeyi reddetmek istediğinize emin misiniz?')) return;
+            
+            try {
+                await apiRequest(`/admin/enrollments/${data.enrollment_id}/payment`, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        payment_status: 'rejected',
+                        reason: data.reason
+                    })
+                });
+                showAlert('Ödeme reddedildi!', 'success');
+                closeModal('rejectPaymentModal');
+                e.target.reset();
+                loadPendingPayments();
+                loadStudents();
+                loadStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        });
+
+        // Reject student enrollment
+        document.getElementById('rejectStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            const enrollment = allEnrollments.find(e => e.id === parseInt(data.enrollment_id));
+            const warningMsg = enrollment && enrollment.class_name 
+                ? `Bu öğrenci "${enrollment.class_name}" sınıfına atanmış. Reddetme durumunda sınıf kaydı ve erişimi kaldırılacak. Devam etmek istediğinize emin misiniz?`
+                : 'Bu öğrenci kaydını reddetmek istediğinize emin misiniz?';
+            
+            if (!confirm(warningMsg)) return;
+            
+            try {
+                await apiRequest(`/admin/enrollments/${data.enrollment_id}/approval`, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        approval_status: 'rejected',
+                        rejection_reason: data.rejection_reason
+                    })
+                });
+                showAlert('Öğrenci kaydı reddedildi ve sınıf erişimi kaldırıldı!', 'success');
+                closeModal('rejectStudentModal');
+                e.target.reset();
+                // Remove info div
+                const infoDiv = document.querySelector('#rejectStudentModal .reject-info');
+                if (infoDiv) infoDiv.remove();
+                loadStudents();
+                loadStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        });
+
+        let currentStudentTab = 'pending';
+
+        // Show student tab
+        function showStudentTab(tab) {
+            currentStudentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            
+            // Show/hide tab content
+            document.querySelectorAll('.student-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(`student-tab-${tab}`).style.display = 'block';
+            
+            // Load data for the selected tab
+            loadStudents();
+        }
+
+        // Load students
+        async function loadStudents() {
+            try {
+                allStudents = await apiRequest('/admin/users');
+                allEnrollments = await apiRequest('/admin/enrollments');
+                allClasses = await apiRequest('/admin/classes');
+                
+                // Update counts
+                const pending = allEnrollments.filter(e => e.approval_status === 'pending' || !e.approval_status).length;
+                const approved = allEnrollments.filter(e => e.approval_status === 'approved').length;
+                const rejected = allEnrollments.filter(e => e.approval_status === 'rejected').length;
+                
+                document.getElementById('pending-count').textContent = pending;
+                document.getElementById('approved-count').textContent = approved;
+                document.getElementById('rejected-count').textContent = rejected;
+                
+                // Display based on current tab
+                if (currentStudentTab === 'pending') {
+                    displayPendingStudents();
+                } else if (currentStudentTab === 'approved') {
+                    displayApprovedStudents();
+                } else if (currentStudentTab === 'rejected') {
+                    displayRejectedStudents();
+                }
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Display pending students
+        function displayPendingStudents() {
+            const tbody = document.getElementById('pendingStudentsTable');
+            tbody.innerHTML = '';
+            
+            const pendingEnrollments = allEnrollments.filter(e => e.approval_status === 'pending' || !e.approval_status);
+            
+            if (pendingEnrollments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Bekleyen onay bulunamadı.</td></tr>';
+                return;
+            }
+            
+            pendingEnrollments.forEach(enrollment => {
+                const student = allStudents.find(s => s.id === enrollment.student_id);
+                if (!student) return;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${student.first_name || ''} ${student.last_name || ''}</td>
+                    <td>${student.email}</td>
+                    <td>${student.phone || 'Belirtilmemiş'}</td>
+                    <td>${enrollment.camp_name}</td>
+                    <td>${enrollment.camp_price} TL</td>
+                    <td>${new Date(enrollment.enrolled_at).toLocaleDateString('tr-TR')}</td>
+                    <td>
+                        <button class="btn btn-success" onclick="showApproveStudentModal(${enrollment.id})" style="margin-right: 0.5rem;">💰 Ödeme Alındı</button>
+                        <button class="btn btn-danger" onclick="showRejectStudentModal(${enrollment.id})">❌ Reddet</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Display approved students
+        function displayApprovedStudents() {
+            const tbody = document.getElementById('approvedStudentsTable');
+            tbody.innerHTML = '';
+            
+            const approvedEnrollments = allEnrollments.filter(e => e.approval_status === 'approved');
+            
+            if (approvedEnrollments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem;">Onaylanmış öğrenci bulunamadı.</td></tr>';
+                return;
+            }
+            
+            approvedEnrollments.forEach(enrollment => {
+                const student = allStudents.find(s => s.id === enrollment.student_id);
+                if (!student) return;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${student.first_name || ''} ${student.last_name || ''}</td>
+                    <td>${student.email}</td>
+                    <td>${student.phone || 'Belirtilmemiş'}</td>
+                    <td>${enrollment.camp_name}</td>
+                    <td>${enrollment.class_name || 'Atanmadı'}</td>
+                    <td>${enrollment.teacher_name || 'Seçilmedi'}</td>
+                    <td>${getPaymentStatusBadge(enrollment.payment_status)}</td>
+                    <td>${new Date(enrollment.enrolled_at).toLocaleDateString('tr-TR')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Display rejected students
+        function displayRejectedStudents() {
+            const tbody = document.getElementById('rejectedStudentsTable');
+            tbody.innerHTML = '';
+            
+            const rejectedEnrollments = allEnrollments.filter(e => e.approval_status === 'rejected');
+            
+            if (rejectedEnrollments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Reddedilmiş öğrenci bulunamadı.</td></tr>';
+                return;
+            }
+            
+            rejectedEnrollments.forEach(enrollment => {
+                const student = allStudents.find(s => s.id === enrollment.student_id);
+                if (!student) return;
+                
+                const rejectionReasonText = {
+                    'could_not_contact': 'İletişim kurulamadı',
+                    'price_too_high': 'Fiyat çok yüksek'
+                };
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${student.first_name || ''} ${student.last_name || ''}</td>
+                    <td>${student.email}</td>
+                    <td>${student.phone || 'Belirtilmemiş'}</td>
+                    <td>${enrollment.camp_name}</td>
+                    <td>${enrollment.camp_price} TL</td>
+                    <td><span style="color: #dc3545; font-weight: bold;">${rejectionReasonText[enrollment.rejection_reason] || enrollment.rejection_reason || 'Belirtilmemiş'}</span></td>
+                    <td>${new Date(enrollment.enrolled_at).toLocaleDateString('tr-TR')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Show approve student modal
+        async function showApproveStudentModal(enrollmentId) {
+            const enrollment = allEnrollments.find(e => e.id === enrollmentId);
+            if (!enrollment) return;
+            
+            // Get available classes for this camp
+            const campClasses = allClasses.filter(c => c.camp_id === enrollment.camp_id);
+            let classSelectHtml = '';
+            
+            if (campClasses.length > 0) {
+                classSelectHtml = `
+                    <div class="camp-class-select" style="margin-top: 1rem;">
+                        <label><strong>Sınıf Seçin (Öğrenci bu sınıfa atanacak):</strong></label>
+                        <select id="approveStudentClassId" class="form-group" style="width: 100%; padding: 0.8rem; margin-top: 0.5rem; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="">Sınıf seçin...</option>
+                            ${campClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            } else {
+                classSelectHtml = `
+                    <div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 5px; border-left: 4px solid #ffc107;">
+                        <p style="margin: 0; color: #856404;">Bu kamp için henüz sınıf oluşturulmamış. Öğretmen sınıf oluşturduktan sonra öğrenciyi atayabilirsiniz.</p>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('paymentModalContent').innerHTML = `
+                <div class="student-card">
+                    <h4>${enrollment.student_name}</h4>
+                    <p><strong>E-posta:</strong> ${enrollment.student_email}</p>
+                    <p><strong>Telefon:</strong> ${enrollment.student_phone || 'Belirtilmemiş'}</p>
+                    <p><strong>Kamp:</strong> ${enrollment.camp_name}</p>
+                    <p><strong>Fiyat:</strong> ${enrollment.camp_price} TL</p>
+                    ${classSelectHtml}
+                    <div class="payment-actions" style="margin-top: 1.5rem;">
+                        <button class="btn btn-success" onclick="approveStudentEnrollment(${enrollmentId})">✅ Ödemeyi Al ve Onayla</button>
+                        <button class="btn btn-secondary" onclick="closeModal('paymentModal')">İptal</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('paymentModal').style.display = 'block';
+        }
+
+        // Approve student enrollment
+        async function approveStudentEnrollment(enrollmentId) {
+            const enrollment = allEnrollments.find(e => e.id === enrollmentId);
+            if (!enrollment) return;
+            
+            const classSelect = document.getElementById('approveStudentClassId');
+            const classId = classSelect ? classSelect.value : null;
+            
+            // Get available classes for this camp
+            const campClasses = allClasses.filter(c => c.camp_id === enrollment.camp_id);
+            
+            if (campClasses.length > 0 && !classId) {
+                showAlert('Lütfen bir sınıf seçin!', 'error');
+                return;
+            }
+            
+            if (!confirm('Ödemeyi aldığınızı ve öğrenciyi onaylamak istediğinize emin misiniz? Öğrenci sınıf içeriklerine erişebilecek.')) return;
+            
+            try {
+                await apiRequest(`/admin/enrollments/${enrollmentId}/approval`, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        approval_status: 'approved',
+                        class_id: classId
+                    })
+                });
+                
+                showAlert('Öğrenci kaydı onaylandı ve sınıfa atandı!', 'success');
+                closeModal('paymentModal');
+                loadStudents();
+                loadStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Show reject student modal
+        function showRejectStudentModal(enrollmentId) {
+            const enrollment = allEnrollments.find(e => e.id === enrollmentId);
+            if (!enrollment) return;
+            
+            document.getElementById('rejectStudentEnrollmentId').value = enrollmentId;
+            
+            // Show enrollment info in modal
+            const modalContent = document.querySelector('#rejectStudentModal .modal-content');
+            const existingInfo = modalContent.querySelector('.reject-info');
+            if (existingInfo) existingInfo.remove();
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'reject-info';
+            infoDiv.style.cssText = 'margin-bottom: 1.5rem; padding: 1rem; background: #f9f9f9; border-radius: 5px;';
+            infoDiv.innerHTML = `
+                <p><strong>Öğrenci:</strong> ${enrollment.student_name}</p>
+                <p><strong>Kamp:</strong> ${enrollment.camp_name} - ${enrollment.camp_price} TL</p>
+                ${enrollment.class_name ? `<p style="color: #dc3545;"><strong>Uyarı:</strong> Öğrenci "${enrollment.class_name}" sınıfına atanmış. Reddetme durumunda sınıf kaydı ve erişimi kaldırılacak.</p>` : ''}
+            `;
+            modalContent.insertBefore(infoDiv, modalContent.querySelector('form'));
+            
+            document.getElementById('rejectStudentModal').style.display = 'block';
+        }
+
+        // Get payment status badge
+        function getPaymentStatusBadge(status) {
+            const badges = {
+                'pending': '<span style="background: #ffc107; color: #000; padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; display: inline-block; margin-top: 0.5rem;">⏳ Ödemesi Alınmamış</span>',
+                'paid': '<span style="background: #17a2b8; color: #fff; padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; display: inline-block; margin-top: 0.5rem;">💰 Ödemesi Alınmış</span>',
+                'approved': '<span style="background: #28a745; color: #fff; padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; display: inline-block; margin-top: 0.5rem;">✅ Onaylanmış</span>',
+                'rejected': '<span style="background: #dc3545; color: #fff; padding: 0.3rem 0.8rem; border-radius: 15px; font-weight: bold; display: inline-block; margin-top: 0.5rem;">❌ Reddedildi</span>'
+            };
+            return badges[status] || badges['pending'];
+        }
+
+        // Load camps
+        async function loadCamps() {
+            try {
+                allCamps = await apiRequest('/camps');
+                allClasses = await apiRequest('/admin/classes');
+                const allUsers = await apiRequest('/admin/users');
+                const teachers = allUsers.filter(u => u.role === 'teacher' && u.approved);
+                
+                const tbody = document.getElementById('campsTableBody');
+                tbody.innerHTML = '';
+                
+                allCamps.forEach(camp => {
+                    // Get teachers for this camp
+                    const campClasses = allClasses.filter(c => c.camp_id === camp.id);
+                    const campTeacherIds = [...new Set(campClasses.map(c => c.teacher_id))];
+                    const campTeachers = teachers.filter(t => campTeacherIds.includes(t.id));
+                    
+                    let teachersHtml = '';
+                    if (campTeachers.length > 0) {
+                        teachersHtml = campTeachers.map(t => 
+                            `<span style="display: inline-block; margin: 0.2rem; padding: 0.3rem 0.6rem; background: #e3f2fd; border-radius: 15px; font-size: 0.85rem;">${t.first_name} ${t.last_name}</span>`
+                        ).join('');
+                    } else {
+                        teachersHtml = '<span style="color: #999;">Öğretmen atanmamış</span>';
+                    }
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${camp.id}</td>
+                        <td>${camp.name}</td>
+                        <td>${camp.description || ''}</td>
+                        <td>${camp.price} TL</td>
+                        <td style="max-width: 300px;">${teachersHtml}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="showAssignTeacherModal(${camp.id})" style="margin-right: 0.5rem;">👨‍🏫 Öğretmen Ata</button>
+                            <button class="btn btn-danger" onclick="deleteCamp(${camp.id})">Sil</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Show assign teacher modal
+        async function showAssignTeacherModal(campId) {
+            const camp = allCamps.find(c => c.id === campId);
+            if (!camp) return;
+            
+            // Get all approved teachers
+            const allUsers = await apiRequest('/admin/users');
+            const teachers = allUsers.filter(u => u.role === 'teacher' && u.approved);
+            
+            // Get teachers already assigned to this camp
+            const campClasses = allClasses.filter(c => c.camp_id === campId);
+            const assignedTeacherIds = [...new Set(campClasses.map(c => c.teacher_id))];
+            const availableTeachers = teachers.filter(t => !assignedTeacherIds.includes(t.id));
+            
+            if (availableTeachers.length === 0) {
+                showAlert('Bu kampa atanabilecek onaylı öğretmen kalmadı!', 'error');
+                return;
+            }
+            
+            let teacherSelectHtml = availableTeachers.map(t => 
+                `<option value="${t.id}">${t.first_name} ${t.last_name} - ${t.email} (${t.field_of_study || 'Alan belirtilmemiş'})</option>`
+            ).join('');
+            
+            document.getElementById('assignTeacherModalContent').innerHTML = `
+                <div class="student-card">
+                    <h4>Kamp: ${camp.name}</h4>
+                    <p><strong>Fiyat:</strong> ${camp.price} TL</p>
+                    <form id="assignTeacherForm">
+                        <input type="hidden" name="camp_id" value="${campId}">
+                        <div class="form-group">
+                            <label for="assignTeacherSelect">Öğretmen Seçin</label>
+                            <select id="assignTeacherSelect" name="teacher_id" required style="width: 100%; padding: 0.8rem; margin-top: 0.5rem; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="">Öğretmen seçin...</option>
+                                ${teacherSelectHtml}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignClassName">Sınıf Adı</label>
+                            <input type="text" id="assignClassName" name="class_name" placeholder="Örn: Matematik Sınıfı" style="width: 100%; padding: 0.8rem; margin-top: 0.5rem; border: 1px solid #ddd; border-radius: 5px;">
+                            <small style="color: #666; display: block; margin-top: 0.3rem;">Boş bırakılırsa otomatik oluşturulur (Öğretmen Adı - Kamp Adı)</small>
+                        </div>
+                        <div class="payment-actions" style="margin-top: 1.5rem;">
+                            <button type="submit" class="btn btn-success">✅ Öğretmeni Ata</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('assignTeacherModal')">İptal</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.getElementById('assignTeacherModal').style.display = 'block';
+        }
+
+        // Create camp
+        document.getElementById('createCampForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            data.price = parseFloat(data.price);
+            
+            try {
+                await apiRequest('/camps', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                showAlert('Kamp oluşturuldu!', 'success');
+                e.target.reset();
+                loadCamps();
+                loadStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        });
+
+        // Assign teacher to camp
+        document.addEventListener('submit', async (e) => {
+            if (e.target.id === 'assignTeacherForm') {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData);
+                const campId = parseInt(data.camp_id);
+                
+                try {
+                    await apiRequest(`/admin/camps/${campId}/assign-teacher`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            teacher_id: parseInt(data.teacher_id),
+                            class_name: data.class_name || null
+                        })
+                    });
+                    
+                    showAlert('Öğretmen kampa atandı ve sınıf oluşturuldu!', 'success');
+                    closeModal('assignTeacherModal');
+                    e.target.reset();
+                    loadCamps();
+                    loadStats();
+                } catch (error) {
+                    showAlert(error.message, 'error');
+                }
+            }
+        });
+
+        // Delete camp
+        async function deleteCamp(id) {
+            if (!confirm('Bu kampı silmek istediğinize emin misiniz?')) return;
+            
+            try {
+                await apiRequest(`/camps/${id}`, { method: 'DELETE' });
+                showAlert('Kamp silindi!', 'success');
+                loadCamps();
+                loadStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Logout
+        function logout() {
+            clearAuth();
+            window.location.href = 'index.html';
+        }
+
+        // Initialize
+        loadUserInfo();
+        loadStats();
+    </script>
+</body>
+</html>
